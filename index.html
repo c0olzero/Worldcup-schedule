@@ -155,21 +155,31 @@
   .slot.locked .nm{font-weight:800}
   .slot.locked .fl{opacity:1;color:var(--green)}
   .slot.locked{background:rgba(52,209,122,.13);box-shadow:inset 3px 0 0 var(--green)}
-  .bracket{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 16px}
-  .round{flex:0 0 auto;width:198px;display:flex;flex-direction:column;justify-content:space-around}
-  .round-h{text-align:center;margin-bottom:8px}
-  .round-h .rn{font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+  .bracket{display:flex;align-items:stretch;overflow-x:auto;padding:4px 2px 18px;--gap:32px;--bline:rgba(255,255,255,.28)}
+  .round{flex:0 0 auto;width:184px;display:flex;flex-direction:column;margin-right:var(--gap)}
+  .round:last-child{margin-right:0}
+  .round-h{text-align:center;margin-bottom:10px;flex:0 0 auto;height:36px}
+  .round-h .rn{font-size:11.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+  .round-h .rd{font-size:8.5px;color:var(--muted-2);font-family:var(--mono);margin-top:3px;letter-spacing:.02em}
   .round.fin .round-h .rn{color:var(--trophy)}
-  .tie{position:relative;margin:6px 0;clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+  .round-ties{flex:1;display:flex;flex-direction:column}
+  .tie{flex:1 1 0;display:flex;flex-direction:column;justify-content:center;position:relative;min-height:56px}
+  .tie .card{clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
     background:linear-gradient(180deg,rgba(244,169,29,.16),rgba(224,26,79,.16));border:1px solid rgba(255,255,255,.1);padding:2px}
-  .tie-when{font-size:9.5px;font-family:var(--mono);color:var(--trophy);font-weight:700;text-align:center;padding:4px 6px 2px;letter-spacing:.02em}
-  .tie-venue{font-size:8.5px;color:var(--muted-2);text-align:center;padding:0 6px 3px}
-  .slot{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text);padding:6px 9px;background:rgba(0,0,0,.24)}
+  .tie-when{font-size:9px;font-family:var(--mono);color:var(--trophy);font-weight:700;text-align:center;padding:4px 6px 2px;letter-spacing:.02em}
+  .tie-venue{font-size:8px;color:var(--muted-2);text-align:center;padding:0 6px 3px}
+  .slot{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text);padding:5px 9px;background:rgba(0,0,0,.24)}
   .slot.top{border-bottom:1px solid rgba(255,255,255,.08)}
   .slot .fl{font-size:12px;opacity:.55}
-  .tie.final-tie{clip-path:none;border:1.5px solid var(--trophy);background:linear-gradient(180deg,rgba(246,197,68,.22),rgba(224,26,79,.18))}
-  .third-tie{margin-top:14px;opacity:.9}
-  .third-cap{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center;font-weight:800;margin-bottom:2px}
+  .tie.final-tie .card{clip-path:none;border:1.5px solid var(--trophy);background:linear-gradient(180deg,rgba(246,197,68,.22),rgba(224,26,79,.18))}
+  /* elbow connectors that show how winners advance */
+  .round.feeds .tie::after{content:"";position:absolute;box-sizing:border-box;left:100%;width:calc(var(--gap)/2);border-right:2px solid var(--bline)}
+  .round.feeds .tie:nth-child(odd)::after{top:50%;height:50%;border-top:2px solid var(--bline);border-top-right-radius:8px}
+  .round.feeds .tie:nth-child(even)::after{bottom:50%;height:50%;border-bottom:2px solid var(--bline);border-bottom-right-radius:8px}
+  .round.fed .tie::before{content:"";position:absolute;box-sizing:border-box;left:calc(-1*var(--gap)/2);width:calc(var(--gap)/2);top:50%;height:2px;background:var(--bline)}
+  .third-wrap{margin-top:20px;display:flex;justify-content:center}
+  .third-card{width:236px}
+  .third-cap{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center;font-weight:800;margin-bottom:5px}
   .bnote{font-size:11.5px;color:var(--muted);margin-top:8px;border-left:2px solid var(--gold-2);padding-left:10px;max-width:760px}
 
   .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);background:#2a0410;
@@ -217,8 +227,8 @@
     <div class="trophy-hero"><div class="ic">🏆</div><div class="ti">The Final</div>
       <div class="dt">Jul 19, 2026 · MetLife Stadium, New York/New Jersey</div></div>
     <div class="qrail" id="qrail"></div>
-    <div class="bracket" id="bracketEl"></div>
-    <p class="bnote">Under 2026's new head-to-head-first tiebreaker, a team is locked as <span style="color:var(--green);font-weight:800">group winner</span> once no rival can pass it on points and it has already beaten every rival that could draw level. Those confirmed winners are filled into their Round-of-32 slots with the exact date and host city. Remaining slots fill in automatically as positions lock. Ties level after 90 minutes go to extra time, then penalties.</p>
+    <div id="bracketEl"></div>
+    <p class="bnote">The bracket reads left to right: each match's winner advances along the connecting line to meet the winner of the match it joins. Teams in <span style="color:var(--green);font-weight:800">green</span> are already locked into their slot (group winners/runners-up that can no longer change); every other slot shows the seed and fills in as results come through. Scroll sideways to follow a path through to the final. Ties level after 90 minutes go to extra time, then penalties.</p>
   </div>
 </main>
 
@@ -416,36 +426,28 @@ const SCORERS = {
 // knockout schedule — each tie has its own date/time(UTC)/venue
 const KO = {
   r32:[
-    {u:"2026-06-28T19:00:00Z",v:"Inglewood",top:"Runners-up A",bot:"Runners-up B"},
-    {u:"2026-06-29T17:00:00Z",v:"Houston",top:"Winners C",bot:"Runners-up F"},
-    {u:"2026-06-29T20:30:00Z",v:"Foxborough",top:"Winners E",bot:"3rd · A/B/C/D/F"},
-    {u:"2026-06-30T01:00:00Z",v:"Guadalajara",top:"Winners F",bot:"Runners-up C"},
-    {u:"2026-06-30T17:00:00Z",v:"Arlington",top:"Runners-up E",bot:"Runners-up I"},
-    {u:"2026-06-30T21:00:00Z",v:"East Rutherford",top:"Winners I",bot:"3rd · C/D/F/G/H"},
-    {u:"2026-07-01T01:00:00Z",v:"Mexico City",top:"Winners A",bot:"3rd · C/E/F/H/I"},
-    {u:"2026-07-01T16:00:00Z",v:"Atlanta",top:"Winners L",bot:"3rd · E/H/I/J/K"},
-    {u:"2026-07-01T20:00:00Z",v:"Seattle",top:"Winners G",bot:"3rd · A/E/H/I/J"},
-    {u:"2026-07-02T00:00:00Z",v:"Santa Clara",top:"Winners D",bot:"3rd · B/E/F/I/J"},
-    {u:"2026-07-02T19:00:00Z",v:"Inglewood",top:"Winners H",bot:"Runners-up J"},
-    {u:"2026-07-02T23:00:00Z",v:"Toronto",top:"Runners-up K",bot:"Runners-up L"},
-    {u:"2026-07-03T03:00:00Z",v:"Vancouver",top:"Winners B",bot:"3rd · E/F/G/I/J"},
-    {u:"2026-07-03T18:00:00Z",v:"Arlington",top:"Runners-up D",bot:"Runners-up G"},
-    {u:"2026-07-03T22:00:00Z",v:"Miami",top:"Winners J",bot:"Runners-up H"},
-    {u:"2026-07-04T01:30:00Z",v:"Kansas City",top:"Winners K",bot:"3rd · D/E/I/J/L"}
+    {top: "Winners E", bot: "3rd · A/B/C/D/F", u: "2026-06-29T20:30:00Z", v: "Boston"},
+    {top: "Winners I", bot: "3rd · C/D/F/G/H", u: "2026-06-30T21:00:00Z", v: "New York/New Jersey"},
+    {top: "Runners-up A", bot: "Runners-up B", u: "2026-06-28T19:00:00Z", v: "Los Angeles"},
+    {top: "Winners F", bot: "Runners-up C", u: "2026-06-30T01:00:00Z", v: "Monterrey"},
+    {top: "Runners-up K", bot: "Runners-up L", u: "2026-07-02T23:00:00Z", v: "Toronto"},
+    {top: "Winners H", bot: "Runners-up J", u: "2026-07-02T19:00:00Z", v: "Los Angeles"},
+    {top: "Winners D", bot: "3rd · B/E/F/I/J", u: "2026-07-02T00:00:00Z", v: "San Francisco Bay Area"},
+    {top: "Winners G", bot: "3rd · A/E/H/I/J", u: "2026-07-01T20:00:00Z", v: "Seattle"},
+    {top: "Winners C", bot: "Runners-up F", u: "2026-06-29T17:00:00Z", v: "Houston"},
+    {top: "Runners-up E", bot: "Runners-up I", u: "2026-06-30T17:00:00Z", v: "Dallas"},
+    {top: "Winners A", bot: "3rd · C/E/F/H/I", u: "2026-07-01T01:00:00Z", v: "Mexico City"},
+    {top: "Winners L", bot: "3rd · E/H/I/J/K", u: "2026-07-01T16:00:00Z", v: "Atlanta"},
+    {top: "Winners J", bot: "Runners-up H", u: "2026-07-03T22:00:00Z", v: "Miami"},
+    {top: "Runners-up D", bot: "Runners-up G", u: "2026-07-03T18:00:00Z", v: "Dallas"},
+    {top: "Winners B", bot: "3rd · E/F/G/I/J", u: "2026-07-03T03:00:00Z", v: "Vancouver"},
+    {top: "Winners K", bot: "3rd · D/E/I/J/L", u: "2026-07-04T01:30:00Z", v: "Kansas City"}
   ],
-  r16:[
-    {u:"2026-07-04T17:00:00Z",v:"Houston"},{u:"2026-07-04T21:00:00Z",v:"Philadelphia"},
-    {u:"2026-07-05T20:00:00Z",v:"East Rutherford"},{u:"2026-07-06T00:00:00Z",v:"Mexico City"},
-    {u:"2026-07-06T19:00:00Z",v:"Arlington"},{u:"2026-07-06T21:00:00Z",v:"Seattle"},
-    {u:"2026-07-07T16:00:00Z",v:"Atlanta"},{u:"2026-07-07T20:00:00Z",v:"Vancouver"}
-  ],
-  qf:[
-    {u:"2026-07-09T20:00:00Z",v:"Foxborough"},{u:"2026-07-10T19:00:00Z",v:"Inglewood"},
-    {u:"2026-07-11T21:00:00Z",v:"Miami"},{u:"2026-07-12T01:00:00Z",v:"Kansas City"}
-  ],
-  sf:[{u:"2026-07-14T19:00:00Z",v:"Arlington"},{u:"2026-07-15T19:00:00Z",v:"Atlanta"}],
-  third:{u:"2026-07-18T21:00:00Z",v:"Miami"},
-  final:{u:"2026-07-19T19:00:00Z",v:"East Rutherford"}
+  r16:[{u: "2026-07-04T21:00:00Z", v: "Philadelphia"},{u: "2026-07-04T17:00:00Z", v: "Houston"},{u: "2026-07-06T19:00:00Z", v: "Dallas"},{u: "2026-07-07T00:00:00Z", v: "Seattle"},{u: "2026-07-05T20:00:00Z", v: "New York/New Jersey"},{u: "2026-07-06T00:00:00Z", v: "Mexico City"},{u: "2026-07-07T16:00:00Z", v: "Atlanta"},{u: "2026-07-07T20:00:00Z", v: "Vancouver"}],
+  qf:[{u: "2026-07-09T20:00:00Z", v: "Boston"},{u: "2026-07-10T19:00:00Z", v: "Los Angeles"},{u: "2026-07-11T21:00:00Z", v: "Miami"},{u: "2026-07-12T01:00:00Z", v: "Kansas City"}],
+  sf:[{u: "2026-07-14T19:00:00Z", v: "Dallas"},{u: "2026-07-15T19:00:00Z", v: "Atlanta"}],
+  third:{u: "2026-07-18T21:00:00Z", v: "Miami"},
+  final:{u: "2026-07-19T19:00:00Z", v: "New York/New Jersey"}
 };
 
 const COLORS={}; Object.keys(GROUP_TEAMS).forEach((g,i)=>COLORS[g]=i%2===0?"red":"gold");
@@ -631,16 +633,16 @@ function slotDiv(label,isTop){
 }
 function tieCard(t,extra){
   const d=new Date(t.u);
-  return `<div class="tie ${extra||""}">
+  return `<div class="tie ${extra||""}"><div class="card">
     <div class="tie-when">${koDay(d)} · ${tHM(d)}</div>
     <div class="tie-venue">${t.v}</div>
     ${slotDiv(t.top||"TBD",true)}
-    ${slotDiv(t.bot||"TBD",false)}</div>`;
+    ${slotDiv(t.bot||"TBD",false)}</div></div>`;
 }
-function roundCol(name,ties,topLbl,botLbl){
-  let h=`<div class="round"><div class="round-h"><div class="rn">${name}</div></div>`;
-  ties.forEach(t=>h+=tieCard({...t,top:t.top||topLbl,bot:t.bot||botLbl}));
-  return h+`</div>`;
+function roundCol(name,sub,ties,cls){
+  let h=`<div class="round ${cls||""}"><div class="round-h"><div class="rn">${name}</div><div class="rd">${sub||""}</div></div><div class="round-ties">`;
+  ties.forEach(t=>h+=tieCard(t));
+  return h+`</div></div>`;
 }
 function renderBracket(){
   let pills="";
@@ -657,19 +659,16 @@ function renderBracket(){
   }
   document.getElementById("qrail").innerHTML=`<span class="lbl">Locked into the Round of 32 — when they play next</span>`+
     (pills||`<span class="qpill" style="border-color:var(--panel-line)"><span class="qp-top">To be confirmed</span></span>`);
-  let html="";
-  html+=roundCol("Round of 32",KO.r32);
-  html+=roundCol("Round of 16",KO.r16,"Winner R32","Winner R32");
-  html+=roundCol("Quarter-finals",KO.qf,"Winner R16","Winner R16");
-  html+=roundCol("Semi-finals",KO.sf,"Winner QF","Winner QF");
-  const f=new Date(KO.final.u), th=new Date(KO.third.u);
-  html+=`<div class="round fin"><div class="round-h"><div class="rn">Final</div></div>
-    ${tieCard({...KO.final,top:"Winner SF1",bot:"Winner SF2"},"final-tie")}
-    <div style="text-align:center;margin:14px 0 6px"><div style="font-size:34px;filter:drop-shadow(0 4px 10px rgba(246,197,68,.4))">🏆</div></div>
-    <div class="third-tie"><div class="third-cap">Third-place play-off</div>
-      ${tieCard({...KO.third,top:"Loser SF1",bot:"Loser SF2"})}</div>
-  </div>`;
-  document.getElementById("bracketEl").innerHTML=html;
+
+  let cols="";
+  cols+=roundCol("Round of 32","28 Jun – 4 Jul",KO.r32,"feeds");
+  cols+=roundCol("Round of 16","4 – 7 Jul",KO.r16,"feeds fed");
+  cols+=roundCol("Quarter-finals","9 – 12 Jul",KO.qf,"feeds fed");
+  cols+=roundCol("Semi-finals","14 – 15 Jul",KO.sf,"feeds fed");
+  cols+=`<div class="round fin fed"><div class="round-h"><div class="rn">🏆 Final</div><div class="rd">19 Jul · ${KO.final.v}</div></div>`+
+        `<div class="round-ties">${tieCard(KO.final,"final-tie")}</div></div>`;
+  const third=`<div class="third-wrap"><div class="third-card"><div class="third-cap">Third-place play-off · ${koDay(new Date(KO.third.u))} · ${KO.third.v}</div>${tieCard(KO.third)}</div></div>`;
+  document.getElementById("bracketEl").innerHTML=`<div class="bracket">${cols}</div>`+third;
 }
 
 /* toast */
