@@ -48,7 +48,21 @@
   .page-title p{margin:5px 0 0;color:var(--muted);font-size:13px}
   .page-title .rule{width:64px;height:3px;background:var(--trophy);margin:12px auto 0;border-radius:2px}
 
+  .view-toggle{display:inline-flex;background:rgba(0,0,0,.3);border:1px solid var(--panel-line);border-radius:30px;padding:3px;gap:3px;flex:none}
+  .vt-btn{border:0;background:transparent;color:var(--muted);font-family:var(--sans);font-weight:800;font-size:12px;letter-spacing:.01em;padding:6px 14px;border-radius:24px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .vt-btn:hover{color:#fff}
+  .vt-btn.active{background:linear-gradient(135deg,var(--red),var(--red-2));color:#fff;box-shadow:0 2px 10px rgba(224,26,79,.35)}
   .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+  /* by-date (chronological) view */
+  .schedule{max-width:780px;margin:0 auto}
+  .day{margin-bottom:22px}
+  .day-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 6px 7px;border-bottom:2px solid var(--gold-2)}
+  .day-date{font-weight:900;font-size:15px;color:var(--trophy);letter-spacing:.01em}
+  .day-count{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap}
+  .day-rows{background:rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.08);border-top:0;border-radius:0 0 12px 12px;overflow:hidden;margin-top:2px}
+  .meta .grp{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff;margin-bottom:3px}
+  .meta .grp.red{background:linear-gradient(135deg,var(--red),var(--red-2))}
+  .meta .grp.gold{background:linear-gradient(135deg,var(--gold),var(--gold-2));color:#3a0712}
   .gcard{border-radius:14px;overflow:hidden;background:rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.08);
     box-shadow:0 8px 26px rgba(0,0,0,.28)}
   .ghead{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none;position:relative}
@@ -116,6 +130,8 @@
   .sc-head::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.1)}
   .goal{display:flex;align-items:center;gap:9px;font-size:13px;padding:4px 0}
   .goal .fl{font-size:14px}.goal .pl{font-weight:700}
+  .goal .pl-team{font-weight:700;color:var(--muted)}
+  .sc-note{font-size:10px;color:var(--muted-2);line-height:1.35;margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.1)}
   .goal .mn{font-family:var(--mono);color:var(--trophy);font-weight:700;margin-left:auto;font-size:12px}
   .goal .tag{font-size:9px;color:var(--muted);border:1px solid var(--panel-line);border-radius:4px;padding:0 4px;margin-left:6px}
   .sc-msg{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:8px}
@@ -168,6 +184,10 @@
     .mrow-main{grid-template-columns:64px 1fr auto 1fr 14px;gap:6px;padding:9px 10px}
     .gflag{width:30px}.gflag .c{width:24px;height:24px;font-size:14px}
     .badge{min-width:46px;font-size:13px;padding:3px 7px}
+    .head-inner{gap:9px;padding:10px 12px}
+    .brand .k{display:none}
+    .vt-btn{padding:5px 12px;font-size:11px}
+    .updated{flex-basis:100%;justify-content:flex-start;font-size:10px}
   }
 </style>
 </head>
@@ -176,6 +196,10 @@
   <div class="head-inner">
     <div class="emblem">🏆</div>
     <div class="brand"><span class="k">Canada · Mexico · USA</span><span class="t">FIFA World Cup <em>2026</em></span></div>
+    <div class="view-toggle" role="tablist">
+      <button class="vt-btn active" id="vtGroup" onclick="setView('group')">By group</button>
+      <button class="vt-btn" id="vtDate" onclick="setView('date')">By date</button>
+    </div>
     <div class="updated"><span class="d"></span><span id="updatedTxt">Results, scorers &amp; standings · as of 25 Jun 2026</span></div>
   </div>
 </header>
@@ -183,10 +207,11 @@
 <main class="wrap">
   <div class="page-title">
     <h1>Group Stage Schedule</h1>
-    <p>All matches, group stage to final · tap a group header for the table · tap a match for goalscorers</p>
+    <p>Tap a group header for its table · tap any match for goalscorers</p>
     <div class="rule"></div>
   </div>
   <div class="groups" id="groupGrid"></div>
+  <div class="schedule" id="scheduleView" style="display:none"></div>
 
   <div class="bracket-wrap">
     <div class="trophy-hero"><div class="ic">🏆</div><div class="ti">The Final</div>
@@ -198,7 +223,7 @@
 </main>
 
 <div class="toast" id="toast"></div>
-<footer>48 teams · 12 groups · 104 matches across 16 host cities. Scores &amp; standings update live from ESPN's public feed while the page is open; a 25 Jun snapshot is built in as a fallback. Goalscorers are the built-in set.</footer>
+<footer>48 teams · 12 groups · 104 matches across 16 host cities. Scores, goalscorers &amp; standings update live from the open-source openfootball/worldcup.json feed while the page is open; a 25 Jun snapshot is built in as a fallback.</footer>
 
 <script>
 const TEAM = {
@@ -345,6 +370,13 @@ let MATCHES = [
 
 // baked-in verified goalscorers (no network needed). goal: {team,player,minute?,pen?,og?}
 const SCORERS = {
+  // Matchday 3 (goal timeline from feed: minute + scoring team, no individual names)
+  "CZE-MEX":[{team:"MEX",minute:55},{team:"MEX",minute:61},{team:"MEX",minute:90}],
+  "RSA-KOR":[{team:"RSA",minute:63}],
+  "SUI-CAN":[{team:"SUI",minute:46},{team:"SUI",minute:57},{team:"CAN",minute:76}],
+  "BIH-QAT":[{team:"BIH",minute:29},{team:"BIH",minute:34},{team:"QAT",minute:42},{team:"BIH",minute:80}],
+  "SCO-BRA":[{team:"BRA",minute:7},{team:"BRA",minute:45},{team:"BRA",minute:60}],
+  "MAR-HTI":[{team:"HTI",minute:10},{team:"MAR",minute:39},{team:"HTI",minute:43},{team:"MAR",minute:45},{team:"MAR",minute:78},{team:"MAR",minute:89}],
   // Group A
   "MEX-RSA":[{team:"MEX",player:"Julián Quiñones",minute:7},{team:"MEX",player:"Raúl Jiménez"}],
   "KOR-CZE":[{team:"CZE",player:"Ladislav Krejčí",minute:59},{team:"KOR",player:"Hwang In-beom",minute:67},{team:"KOR",player:"Oh Hyeon-gyu",minute:78}],
@@ -443,7 +475,7 @@ function standingsHTML(g){
   return h;
 }
 
-function matchRowHTML(m){
+function matchRowHTML(m, byDate){
   const d=new Date(m.u), t=hasTime(m.u);
   const live=m.st==="live"||m.st==="inprogress", final=m.st==="final";
   const hW=final&&m.hs>m.as, aW=final&&m.as>m.hs;
@@ -455,10 +487,12 @@ function matchRowHTML(m){
     badge=`<div class="badge vs">VS</div>`;
     sub=`<div class="ftft">${t?tHM(d):"&nbsp;"}</div>`;
   }
-  const metaSub = t ? `${wDay(d)} · ${tHM(d)}` : `${wDay(d)}`;
+  const meta = byDate
+    ? `<div class="meta"><div class="grp ${COLORS[m.g]}">${m.g}</div><div class="wt">${t?tHM(d):"TBD"}</div></div>`
+    : `<div class="meta"><div class="dm">${dShort(d)}</div><div class="wt">${t?`${wDay(d)} · ${tHM(d)}`:wDay(d)}</div></div>`;
   return `<div class="mrow" data-mk="${key(m)}" onclick="toggleMatch(this)">
     <div class="mrow-main">
-      <div class="meta"><div class="dm">${dShort(d)}</div><div class="wt">${metaSub}</div></div>
+      ${meta}
       <div class="tm"><span class="fl">${TEAM[m.h][1]}</span><span class="ab">${m.h}</span></div>
       <div>${badge}${sub}</div>
       <div class="tm away"><span class="ab">${m.a}</span><span class="fl">${TEAM[m.a][1]}</span></div>
@@ -484,6 +518,35 @@ function renderGroups(){
   document.getElementById("groupGrid").innerHTML=html;
 }
 
+/* chronological (by-date) view */
+function localKey(d){ const p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function renderSchedule(){
+  const byDay={};
+  MATCHES.forEach(m=>{ const k=localKey(new Date(m.u)); (byDay[k]=byDay[k]||[]).push(m); });
+  let html="";
+  Object.keys(byDay).sort().forEach(k=>{
+    const ms=byDay[k].sort((a,b)=>new Date(a.u)-new Date(b.u));
+    const d0=new Date(ms[0].u);
+    const label=d0.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});
+    const done=ms.filter(m=>m.st==="final").length;
+    const rows=ms.map(m=>matchRowHTML(m,true)).join("");
+    html+=`<div class="day">
+      <div class="day-h"><span class="day-date">${label}</span><span class="day-count">${done}/${ms.length} played</span></div>
+      <div class="day-rows">${rows}</div></div>`;
+  });
+  document.getElementById("scheduleView").innerHTML=html;
+}
+
+/* view toggle */
+let VIEW="group";
+function setView(mode){
+  VIEW=mode;
+  document.getElementById("groupGrid").style.display = mode==="group" ? "" : "none";
+  document.getElementById("scheduleView").style.display = mode==="date" ? "" : "none";
+  document.getElementById("vtGroup").classList.toggle("active", mode==="group");
+  document.getElementById("vtDate").classList.toggle("active", mode==="date");
+}
+
 /* toggles */
 function toggleStandings(headEl){
   const panel=headEl.nextElementSibling; panel.classList.toggle("open");
@@ -499,14 +562,18 @@ function toggleMatch(rowEl){
 function goalLine(g){
   const fl=TEAM[g.team]?TEAM[g.team][1]:"⚽";
   const tags=(g.pen?`<span class="tag">PEN</span>`:"")+(g.og?`<span class="tag">OG</span>`:"");
-  const mn=(g.minute!=null)?`<span class="mn">${g.minute}'</span>`:`<span class="mn"></span>`;
-  return `<div class="goal"><span class="fl">${fl}</span><span class="pl">${g.player}</span>${tags}${mn}</div>`;
+  const mtxt=(g.mdisp!=null&&g.mdisp!=="null"&&g.mdisp!=="")?g.mdisp:(g.minute!=null?String(g.minute):"");
+  const mn=mtxt?`<span class="mn">${mtxt}'</span>`:`<span class="mn"></span>`;
+  const who=g.player?g.player:(TEAM[g.team]?`<span class="pl-team">${TEAM[g.team][0]}</span>`:"Goal");
+  return `<div class="goal"><span class="fl">${fl}</span><span class="pl">${who}</span>${tags}${mn}</div>`;
 }
 function renderScorers(rowEl,goals){
   const box=rowEl.querySelector(".scorers-in");
   if(!goals||!goals.length){box.innerHTML=`<div class="sc-msg">No goals to show.</div>`;return;}
   const sorted=[...goals].sort((a,b)=>(a.minute==null?999:a.minute)-(b.minute==null?999:b.minute));
-  box.innerHTML=`<div class="sc-head">Goalscorers</div>`+sorted.map(goalLine).join("");
+  const unnamed=goals.some(g=>!g.player);
+  box.innerHTML=`<div class="sc-head">${unnamed?"Goal timeline":"Goalscorers"}</div>`+sorted.map(goalLine).join("")
+    +(unnamed?`<div class="sc-note">Goal times &amp; scoring team are from the match feed — it doesn't name the individual scorers.</div>`:"");
 }
 function loadScorers(rowEl){
   const mk=rowEl.dataset.mk, m=MATCHES.find(x=>key(x)===mk), box=rowEl.querySelector(".scorers-in");
@@ -516,7 +583,10 @@ function loadScorers(rowEl){
   }
   if(SCORERS[mk]){renderScorers(rowEl,SCORERS[mk]);return;}
   if(m.hs===0&&m.as===0){box.innerHTML=`<div class="sc-msg">0–0 · no goals in this match.</div>`;return;}
-  box.innerHTML=`<div class="sc-msg">⚽ ${m.hs}–${m.as} · detailed goalscorers for this match aren't in yet.</div>`;
+  const lines=[];
+  if(m.hs>0) lines.push(`<div class="goal"><span class="fl">${TEAM[m.h][1]}</span><span class="pl"><span class="pl-team">${TEAM[m.h][0]}</span></span><span class="mn">×${m.hs}</span></div>`);
+  if(m.as>0) lines.push(`<div class="goal"><span class="fl">${TEAM[m.a][1]}</span><span class="pl"><span class="pl-team">${TEAM[m.a][0]}</span></span><span class="mn">×${m.as}</span></div>`);
+  box.innerHTML=`<div class="sc-head">Goals</div>`+lines.join("")+`<div class="sc-note">Goal times &amp; scorers aren't available for this match yet — only the final score.</div>`;
 }
 
 /* bracket */
@@ -613,10 +683,10 @@ function recompute(){
   FLAGS={}; for(const g in GROUPS) FLAGS[g]=groupFlags(g);
   LOCKS={}; for(const g in FLAGS){ if(FLAGS[g].first) LOCKS["Winners "+g]=FLAGS[g].first; if(FLAGS[g].second) LOCKS["Runners-up "+g]=FLAGS[g].second; }
 }
-function renderAll(){ recompute(); renderGroups(); renderBracket(); }
+function renderAll(){ recompute(); renderGroups(); renderSchedule(); renderBracket(); }
 
-/* ---------- live updates from ESPN's public feed ---------- */
-const ESPN_BASE="https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
+/* ---------- live updates from openfootball/worldcup.json (public domain · no key · CORS-open) ---------- */
+const OF_URL="https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json";
 function norm(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,""); }
 const NAME_INDEX={}; for(const c in TEAM){ NAME_INDEX[norm(TEAM[c][0])]=c; }
 const ALIAS={alg:"DZA",algeria:"DZA",southkorea:"KOR",korearepublic:"KOR",korearep:"KOR",republicofkorea:"KOR",
@@ -624,15 +694,8 @@ const ALIAS={alg:"DZA",algeria:"DZA",southkorea:"KOR",korearepublic:"KOR",korear
   cotedivoire:"CIV",ivorycoast:"CIV",drcongo:"COD",congodr:"COD",democraticrepublicofthecongo:"COD",
   bosniaandherzegovina:"BIH",bosniaherzegovina:"BIH",caboverde:"CPV",capeverde:"CPV",curacao:"CUW",
   newzealand:"NZL",southafrica:"RSA",saudiarabia:"KSA"};
-function resolveCode(comp){
-  const ab=(comp.team&&comp.team.abbreviation||"").toUpperCase();
-  if(TEAM[ab]) return ab;
-  const t=comp.team||{};
-  for(const c of [t.displayName,t.name,t.shortDisplayName,t.location,ab]){
-    const k=norm(c); if(NAME_INDEX[k]) return NAME_INDEX[k]; if(ALIAS[k]) return ALIAS[k];
-  }
-  return null;
-}
+function nameToCode(n){ const k=norm(n); return NAME_INDEX[k]||ALIAS[k]||null; }   // full team name -> 3-letter code
+function ofMin(s){ const m=String(s==null?"":s).match(/^\d+/); return m?parseInt(m[0],10):null; }
 const RANK={scheduled:0,live:1,final:2};
 const SNAP="25 Jun";
 function setLiveStatus(ok,changed){
@@ -640,63 +703,38 @@ function setLiveStatus(ok,changed){
   if(ok){
     const now=new Date().toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
     el.textContent="Live · updated "+now; if(dot) dot.style.background="var(--green)";
-    if(changed) toast(`Live update · ${changed} match${changed>1?"es":""} changed`);
+    if(changed) toast(`Updated · ${changed} match${changed>1?"es":""} changed`);
   }else{
     el.textContent="Offline — showing saved snapshot ("+SNAP+")"; if(dot) dot.style.background="var(--muted-2)";
   }
 }
-// merge one scoreboard payload into MATCHES (advance-only); returns number of changes
-function mergeEvents(data){
-  let changed=0;
-  ((data&&data.events)||[]).forEach(ev=>{
-    const comp=ev.competitions&&ev.competitions[0]; if(!comp) return;
-    const cs=comp.competitors||[];
-    const home=cs.find(c=>c.homeAway==="home"), away=cs.find(c=>c.homeAway==="away");
-    if(!home||!away) return;
-    const hc=resolveCode(home), ac=resolveCode(away); if(!hc||!ac) return;
-    const sid=(comp.status&&comp.status.type&&comp.status.type.id)||"1";
-    const est=sid==="3"?"final":(sid==="2"?"live":"scheduled");
-    const m=MATCHES.find(x=>(x.h===hc&&x.a===ac)||(x.h===ac&&x.a===hc));
-    if(!m) return;
-    if(RANK[est] < RANK[m.st]) return;                 // never regress a known result
-    const flip=(m.h!==hc);
-    let nh=parseInt(home.score,10), na=parseInt(away.score,10);
-    nh=isNaN(nh)?0:nh; na=isNaN(na)?0:na;
-    const fh=flip?na:nh, fa=flip?nh:na;
-    if(m.st!==est||m.hs!==fh||m.as!==fa){ m.st=est; m.hs=fh; m.as=fa; changed++; }
-  });
-  return changed;
-}
-// ESPN ignores broad date ranges, so query one matchday at a time
-const MATCH_DATES=[...new Set(MATCHES.map(m=>m.u.slice(0,10).replace(/-/g,"")))].sort();
-async function fetchDay(day){
-  const res=await fetch(ESPN_BASE+"?dates="+day,{headers:{accept:"application/json"}});
-  if(!res.ok) throw new Error("HTTP "+res.status);
-  return res.json();
-}
-function recentDays(){                                   // yesterday..tomorrow, for light polling
-  const now=Date.now();
-  return MATCH_DATES.filter(d=>{
-    const dt=Date.parse(d.slice(0,4)+"-"+d.slice(4,6)+"-"+d.slice(6,8)+"T12:00:00Z");
-    return dt>=now-2*864e5 && dt<=now+864e5;
-  });
-}
-async function fetchLive(allDays){
-  const days = allDays ? MATCH_DATES : recentDays();
-  if(!days.length){ return; }
-  let changed=0, ok=false, fails=0;
-  for(const d of days){
-    try{ changed+=mergeEvents(await fetchDay(d)); ok=true; }
-    catch(e){ if(!ok && ++fails>=2) break; }            // first couple fail -> assume offline, stop
-  }
-  if(ok){ setLiveStatus(true,changed); if(changed) renderAll(); }
-  else setLiveStatus(false);
+async function fetchLive(){
+  try{
+    const res=await fetch(OF_URL,{headers:{accept:"application/json"}});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data=await res.json();
+    let changed=0;
+    (data.matches||[]).forEach(M=>{
+      const ft=M.score&&M.score.ft; if(!ft||ft.length<2) return;          // only completed matches carry a full-time score
+      const hc=nameToCode(M.team1), ac=nameToCode(M.team2); if(!hc||!ac) return;
+      const m=MATCHES.find(x=>(x.h===hc&&x.a===ac)||(x.h===ac&&x.a===hc)); if(!m) return;
+      const flip=(m.h!==hc);
+      const fh=flip?ft[1]:ft[0], fa=flip?ft[0]:ft[1];
+      if(m.st!=="final"||m.hs!==fh||m.as!==fa){ m.st="final"; m.hs=fh; m.as=fa; changed++; }   // ft is always final -> never regresses
+      const goals=[];                                                     // real named scorers, with minute + pen/own-goal
+      (M.goals1||[]).forEach(g=>goals.push({team:hc,player:g.name,minute:ofMin(g.minute),mdisp:String(g.minute),pen:!!g.penalty,og:!!g.owngoal}));
+      (M.goals2||[]).forEach(g=>goals.push({team:ac,player:g.name,minute:ofMin(g.minute),mdisp:String(g.minute),pen:!!g.penalty,og:!!g.owngoal}));
+      if(goals.length) SCORERS[key(m)]=goals;
+    });
+    setLiveStatus(true,changed);
+    if(changed) renderAll();
+  }catch(e){ setLiveStatus(false); }
 }
 
-/* init: render the snapshot instantly, backfill everything ESPN has, then poll recent days */
+/* init: render the snapshot instantly, then pull live results + scorers, refreshing every 60s */
 renderAll();
-fetchLive(true);
-setInterval(()=>fetchLive(false),60000);
+fetchLive();
+setInterval(fetchLive,60000);
 </script>
 </body>
 </html>
