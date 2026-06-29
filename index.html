@@ -157,6 +157,9 @@
   .slot.locked{background:rgba(52,209,122,.13);box-shadow:inset 3px 0 0 var(--green)}
   .slot .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .sl-sc{margin-left:auto;font-family:var(--mono);font-weight:800;font-size:12px;color:var(--muted);padding-left:6px}
+  .sl-pr{margin-left:auto;font-family:var(--mono);font-weight:700;font-size:10px;color:var(--muted-2);padding-left:6px}
+  .sl-pr.fav{color:var(--green)}
+  .km-od.fav{color:var(--green)}
   .slot.win .nm{color:var(--trophy)}
   .slot.win .sl-sc{color:var(--trophy)}
   .slot.win{box-shadow:inset 3px 0 0 var(--trophy)}
@@ -230,6 +233,9 @@
   .km-vs{color:var(--muted-2);font-weight:700;font-size:13px}
   .km-goals-h{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:12px 0 6px;border-top:1px solid rgba(255,255,255,.1);padding-top:10px}
   .km-note{font-size:12px;color:var(--muted);text-align:center;margin-top:12px;border-top:1px solid rgba(255,255,255,.1);padding-top:12px}
+  .km-odds{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:8px 4px 0;border-top:1px dashed rgba(255,255,255,.12)}
+  .km-od{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--trophy)}
+  .km-odds-lbl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);text-align:center;flex:1}
   .bnote{font-size:11.5px;color:var(--muted);margin-top:8px;border-left:2px solid var(--gold-2);padding-left:10px;max-width:760px}
 
   .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);background:#2a0410;
@@ -277,7 +283,8 @@
     <div class="trophy-hero"><div class="ic">🏆</div><div class="ti">The Final</div>
       <div class="dt">Jul 19, 2026 · MetLife Stadium, New York/New Jersey</div></div>
     <div id="bracketEl"></div>
-    <p class="bnote">The bracket reads left to right: each match's winner advances along the connecting line to meet the winner of the match it joins. Teams in <span style="color:var(--green);font-weight:800">green</span> are already locked into their slot (group winners/runners-up that can no longer change); every other slot shows the seed and fills in as results come through. Scroll sideways to follow a path through to the final. Ties level after 90 minutes go to extra time, then penalties.</p>
+    <p class="bnote">The bracket reads left to right: each match's winner advances along the connecting line to meet the winner of the match it joins. Teams in <span style="color:var(--green);font-weight:800">green</span> are already locked into their slot; every other slot shows the seed and fills in as results come through. The figure by each team is its <strong>chance of winning that match</strong> (the favourite shown in green) — once a match is played that's replaced by the score. Tap any match for goalscorers and the odds. Ties level after 90 minutes go to extra time, then penalties.</p>
+    <p class="bnote" style="font-size:10px;color:var(--muted-2);margin-top:6px">Win probabilities are a model estimate from team strength (Elo) ratings via the standard Elo formula — they don't factor in home advantage, form or injuries.</p>
   </div>
 </main>
 
@@ -513,6 +520,11 @@ const KOMETA = {};
 });
 KOMETA[KON.final]={u:KO.final.u,v:KO.final.v,name:"Final"};
 KOMETA[KON.third]={u:KO.third.u,v:KO.third.v,name:"Third-place play-off"};
+// Approximate Elo-style strength ratings (eloratings.net scale, ~Jun 2026), compiled from
+// public Elo / FIFA-ranking data. Used to model each team's chance of winning a given match.
+const ELO = {ESP:2080,FRA:2065,ARG:2060,BRA:2010,POR:2000,NED:1995,ENG:1985,GER:1955,COL:1955,BEL:1945,URU:1940,CRO:1900,MAR:1900,JPN:1870,ECU:1850,SUI:1850,SEN:1850,NOR:1840,USA:1825,AUT:1815,TUR:1815,MEX:1810,CIV:1805,CZE:1800,DZA:1800,IRN:1800,CAN:1800,EGY:1790,KOR:1790,SWE:1790,SCO:1790,PAR:1775,GHA:1775,COD:1760,BIH:1755,RSA:1750,TUN:1745,AUS:1720,CPV:1710,UZB:1700,IRQ:1700,PAN:1690,QAT:1690,KSA:1685,JOR:1680,CUW:1620,NZL:1610,HTI:1600};
+// Standard Elo win expectancy: probability that team a beats team b in a one-off match.
+function winProb(a,b){ if(!ELO[a]||!ELO[b]) return null; return 1/(1+Math.pow(10,(ELO[b]-ELO[a])/400)); }
 // Advance the winner of every decided knockout match into its next-round slot (and each
 // semifinal loser into the bronze final). Runs on the live KOFILL so the bracket fills
 // itself forward the instant a result is in, without waiting for the feed to rewrite refs.
@@ -705,23 +717,27 @@ function groupFlags(g){
   return {top2,first,second};
 }
 
-function slotDiv(label,isTop,fill,sc,win){
+function slotDiv(label,isTop,fill,sc,win,prob){
   const ab=fill||LOCKS[label]||null;
   const cls="slot"+(isTop?" top":"")+(ab?" locked":"")+(win?" win":"");
   const inner=ab?`<span class="fl">${TEAM[ab][1]}</span><span class="nm">${TEAM[ab][0]}</span>`:`<span class="fl">●</span>${label}`;
-  const score=(sc!=null&&sc!=="")?`<span class="sl-sc">${sc}</span>`:"";
-  return `<div class="${cls}">${inner}${score}</div>`;
+  let right="";
+  if(sc!=null&&sc!=="") right=`<span class="sl-sc">${sc}</span>`;
+  else if(prob!=null) right=`<span class="sl-pr${prob>=0.5?" fav":""}" title="Chance of winning this match (Elo model)">${Math.round(prob*100)}%</span>`;
+  return `<div class="${cls}">${inner}${right}</div>`;
 }
 function tieCard(t,n,extra){
   const d=new Date(t.u);
   const f=KOFILL[n]||{};
   const fin=f.st==="final"&&f.hs!=null&&f.as!=null;
   const click=(f.h||f.a)?" clickable":"";
+  let pH=null,pA=null;
+  if(!fin&&f.h&&f.a){ const p=winProb(f.h,f.a); if(p!=null){ pH=p; pA=1-p; } }
   return `<div class="tie ${extra||""}${click}" data-ko="${n}"><div class="card">
     <div class="tie-when">${koDay(d)} · ${tHM(d)}</div>
     <div class="tie-venue">${t.v}</div>
-    ${slotDiv(t.top||"TBD",true,f.h,fin?f.hs:null,fin&&f.hs>f.as)}
-    ${slotDiv(t.bot||"TBD",false,f.a,fin?f.as:null,fin&&f.as>f.hs)}</div></div>`;
+    ${slotDiv(t.top||"TBD",true,f.h,fin?f.hs:null,fin&&f.hs>f.as,pH)}
+    ${slotDiv(t.bot||"TBD",false,f.a,fin?f.as:null,fin&&f.as>f.hs,pA)}</div></div>`;
 }
 function roundCol(name,sub,ties,nums,cls){
   let h=`<div class="round ${cls||""}"><div class="round-h"><div class="rn">${name}</div><div class="rd">${sub||""}</div></div><div class="round-ties">`;
@@ -783,6 +799,10 @@ function openKO(n){
   let body=`<div class="km-round">${meta.name||"Knockout"}</div>
     <div class="km-meta">${d?koDay(d)+" · "+tHM(d):""}${meta.v?" · "+meta.v:""}</div>
     <div class="km-teams"><div class="km-team">${tn(f.h,meta.top)}</div>${mid}<div class="km-team">${tn(f.a,meta.bot)}</div></div>`;
+  if(f.h&&f.a&&winProb(f.h,f.a)!=null){
+    const ph=Math.round(winProb(f.h,f.a)*100);
+    body+=`<div class="km-odds"><span class="km-od${ph>=50?" fav":""}">${ph}%</span><span class="km-odds-lbl">chance of winning${fin?" (pre-match)":""}</span><span class="km-od${100-ph>50?" fav":""}">${100-ph}%</span></div>`;
+  }
   if(f.g&&f.g.length){
     const sorted=[...f.g].sort((a,b)=>(a.minute==null?999:a.minute)-(b.minute==null?999:b.minute));
     body+=`<div class="km-goals-h">Goalscorers</div>`+sorted.map(goalLine).join("");
