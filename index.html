@@ -45,6 +45,9 @@
   main{padding:22px 0 70px}
   .page-title{text-align:center;margin:6px 0 22px}
   .page-title h1{font-size:clamp(20px,4vw,30px);font-weight:900;letter-spacing:.02em;margin:0;text-transform:uppercase}
+  .grp-toggle{cursor:pointer;display:inline-flex;align-items:center;gap:10px;user-select:none;transition:color .12s}
+  .grp-toggle:hover{color:var(--trophy)}
+  .grp-toggle .chev{font-size:.6em;color:var(--trophy);transition:transform .15s}
   .page-title p{margin:5px 0 0;color:var(--muted);font-size:13px}
   .page-title .rule{width:64px;height:3px;background:var(--trophy);margin:12px auto 0;border-radius:2px}
 
@@ -272,11 +275,11 @@
 
 <main class="wrap">
   <div class="page-title">
-    <h1>Group Stage Schedule</h1>
-    <p>Tap a group header for its table · tap any match for goalscorers</p>
+    <h1 class="grp-toggle" id="grpToggle" role="button" tabindex="0" aria-expanded="false" onclick="toggleGroups()">Group Stage <span class="chev" id="grpChev">▸</span></h1>
+    <p id="grpHint">Group stage complete — tap to view all results, scorers &amp; standings</p>
     <div class="rule"></div>
   </div>
-  <div class="groups" id="groupGrid"></div>
+  <div class="groups" id="groupGrid" style="display:none"></div>
   <div class="schedule" id="scheduleView" style="display:none"></div>
 
   <div class="bracket-wrap">
@@ -633,10 +636,26 @@ function renderSchedule(){
 
 /* view toggle */
 let VIEW="group";
+let GROUPS_OPEN=false;
+function applyGroupDisplay(){
+  document.getElementById("groupGrid").style.display    = (GROUPS_OPEN && VIEW==="group") ? "" : "none";
+  document.getElementById("scheduleView").style.display = (GROUPS_OPEN && VIEW==="date")  ? "" : "none";
+}
+function setGroupsOpen(open){
+  GROUPS_OPEN=open;
+  applyGroupDisplay();
+  const vt=document.querySelector(".view-toggle"); if(vt) vt.style.display = open ? "" : "none";
+  const ch=document.getElementById("grpChev"); if(ch) ch.textContent = open ? "▾" : "▸";
+  const hint=document.getElementById("grpHint");
+  if(hint) hint.textContent = open
+    ? "Tap a group header for its table · tap any match for goalscorers"
+    : "Group stage complete — tap to view all results, scorers & standings";
+  const tg=document.getElementById("grpToggle"); if(tg) tg.setAttribute("aria-expanded", open?"true":"false");
+}
+function toggleGroups(){ setGroupsOpen(!GROUPS_OPEN); }
 function setView(mode){
   VIEW=mode;
-  document.getElementById("groupGrid").style.display = mode==="group" ? "" : "none";
-  document.getElementById("scheduleView").style.display = mode==="date" ? "" : "none";
+  applyGroupDisplay();
   document.getElementById("vtGroup").classList.toggle("active", mode==="group");
   document.getElementById("vtDate").classList.toggle("active", mode==="date");
 }
@@ -890,6 +909,7 @@ async function fetchLive(){
 
 /* init: render the snapshot instantly, then pull live results + scorers, refreshing every 60s */
 renderAll();
+setGroupsOpen(false);   // group stage is finished — start collapsed, one tap to reveal
 fetchLive();
 setInterval(fetchLive,60000);
 
@@ -899,6 +919,7 @@ document.getElementById("bracketEl").addEventListener("click",e=>{
   openKO(+tie.dataset.ko);
 });
 document.getElementById("koClose").addEventListener("click",closeKO);
+document.getElementById("grpToggle").addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleGroups(); } });
 document.getElementById("koModal").addEventListener("click",e=>{ if(e.target.id==="koModal") closeKO(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeKO(); });
 /* swap ladder <-> two-sided bracket when the viewport orientation crosses square */
