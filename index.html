@@ -513,6 +513,22 @@ const KOMETA = {};
 });
 KOMETA[KON.final]={u:KO.final.u,v:KO.final.v,name:"Final"};
 KOMETA[KON.third]={u:KO.third.u,v:KO.third.v,name:"Third-place play-off"};
+// Advance the winner of every decided knockout match into its next-round slot (and each
+// semifinal loser into the bronze final). Runs on the live KOFILL so the bracket fills
+// itself forward the instant a result is in, without waiting for the feed to rewrite refs.
+function propagateBracket(){
+  const f=n=>KOFILL[n];
+  const done=n=>{const x=f(n);return x&&x.st==="final"&&x.hs!=null&&x.as!=null&&x.hs!==x.as;};
+  const win=n=>done(n)?(f(n).hs>f(n).as?f(n).h:f(n).a):null;
+  const lose=n=>done(n)?(f(n).hs>f(n).as?f(n).a:f(n).h):null;
+  const ensure=n=>{ if(!KOFILL[n]) KOFILL[n]={h:null,a:null,hs:null,as:null,st:"sched",g:[]}; return KOFILL[n]; };
+  const put=(n,slot,code)=>{ if(code){ const x=ensure(n); if(!x[slot]) x[slot]=code; } };
+  KON.r16.forEach((n,i)=>{ put(n,"h",win(KON.r32[2*i])); put(n,"a",win(KON.r32[2*i+1])); });
+  KON.qf.forEach((n,i)=>{ put(n,"h",win(KON.r16[2*i])); put(n,"a",win(KON.r16[2*i+1])); });
+  KON.sf.forEach((n,i)=>{ put(n,"h",win(KON.qf[2*i])); put(n,"a",win(KON.qf[2*i+1])); });
+  put(KON.final,"h",win(KON.sf[0])); put(KON.final,"a",win(KON.sf[1]));
+  put(KON.third,"h",lose(KON.sf[0])); put(KON.third,"a",lose(KON.sf[1]));
+}
 
 const COLORS={}; Object.keys(GROUP_TEAMS).forEach((g,i)=>COLORS[g]=i%2===0?"red":"gold");
 
@@ -843,7 +859,10 @@ async function fetchLive(){
       if(ac)(M.goals2||[]).forEach(x=>g.push({team:ac,player:x.name,minute:ofMin(x.minute),mdisp:String(x.minute),pen:!!x.penalty,og:!!x.owngoal}));
       newFill[num]={h:hc||null,a:ac||null,hs:ft?ft[0]:null,as:ft?ft[1]:null,st:(ft&&ft.length>=2)?"final":"sched",g};
     });
-    if(JSON.stringify(newFill)!==JSON.stringify(KOFILL)){ KOFILL=newFill; changed++; }
+    const prevKO=JSON.stringify(KOFILL);
+    KOFILL=newFill;
+    propagateBracket();                         // cascade winners into later rounds
+    if(JSON.stringify(KOFILL)!==prevKO) changed++;
     setLiveStatus(true,changed);
     if(changed) renderAll();
   }catch(e){ setLiveStatus(false); }
