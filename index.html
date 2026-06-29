@@ -155,6 +155,11 @@
   .slot.locked .nm{font-weight:800}
   .slot.locked .fl{opacity:1;color:var(--green)}
   .slot.locked{background:rgba(52,209,122,.13);box-shadow:inset 3px 0 0 var(--green)}
+  .slot .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sl-sc{margin-left:auto;font-family:var(--mono);font-weight:800;font-size:12px;color:var(--muted);padding-left:6px}
+  .slot.win .nm{color:var(--trophy)}
+  .slot.win .sl-sc{color:var(--trophy)}
+  .slot.win{box-shadow:inset 3px 0 0 var(--trophy)}
   .bracket{display:flex;align-items:stretch;overflow-x:auto;padding:4px 2px 18px;--gap:32px;--bline:rgba(255,255,255,.28)}
   .round{flex:0 0 auto;width:184px;display:flex;flex-direction:column;margin-right:var(--gap)}
   .round:last-child{margin-right:0}
@@ -172,14 +177,59 @@
   .slot.top{border-bottom:1px solid rgba(255,255,255,.08)}
   .slot .fl{font-size:12px;opacity:.55}
   .tie.final-tie .card{clip-path:none;border:1.5px solid var(--trophy);background:linear-gradient(180deg,rgba(246,197,68,.22),rgba(224,26,79,.18))}
-  /* elbow connectors that show how winners advance */
-  .round.feeds .tie::after{content:"";position:absolute;box-sizing:border-box;left:100%;width:calc(var(--gap)/2);border-right:2px solid var(--bline)}
-  .round.feeds .tie:nth-child(odd)::after{top:50%;height:50%;border-top:2px solid var(--bline);border-top-right-radius:8px}
-  .round.feeds .tie:nth-child(even)::after{bottom:50%;height:50%;border-bottom:2px solid var(--bline);border-bottom-right-radius:8px}
-  .round.fed .tie::before{content:"";position:absolute;box-sizing:border-box;left:calc(-1*var(--gap)/2);width:calc(var(--gap)/2);top:50%;height:2px;background:var(--bline)}
+  .tie.clickable{cursor:pointer}
+  .tie.clickable .card{transition:border-color .12s,transform .12s}
+  .tie.clickable:hover .card{border-color:var(--trophy)}
+  /* elbow connectors — normal (left→right) */
+  .round.feeds:not(.mirror) .tie::after{content:"";position:absolute;box-sizing:border-box;left:100%;width:calc(var(--gap)/2);border-right:2px solid var(--bline)}
+  .round.feeds:not(.mirror) .tie:nth-child(odd)::after{top:50%;height:50%;border-top:2px solid var(--bline);border-top-right-radius:8px}
+  .round.feeds:not(.mirror) .tie:nth-child(even)::after{bottom:50%;height:50%;border-bottom:2px solid var(--bline);border-bottom-right-radius:8px}
+  .round.fed:not(.mirror) .tie::before{content:"";position:absolute;box-sizing:border-box;left:calc(-1*var(--gap)/2);width:calc(var(--gap)/2);top:50%;height:2px;background:var(--bline)}
+  /* elbow connectors — mirrored (right→left) for the right half of the two-sided bracket */
+  .round.mirror.feeds .tie::before{content:"";position:absolute;box-sizing:border-box;right:100%;width:calc(var(--gap)/2);border-left:2px solid var(--bline)}
+  .round.mirror.feeds .tie:nth-child(odd)::before{top:50%;height:50%;border-top:2px solid var(--bline);border-top-left-radius:8px}
+  .round.mirror.feeds .tie:nth-child(even)::before{bottom:50%;height:50%;border-bottom:2px solid var(--bline);border-bottom-left-radius:8px}
+  .round.mirror.fed .tie::after{content:"";position:absolute;box-sizing:border-box;right:calc(-1*var(--gap)/2);width:calc(var(--gap)/2);top:50%;height:2px;background:var(--bline)}
+  /* semifinal -> centre final straight links */
+  .round.sf-col:not(.mirror) .tie::after{content:"";position:absolute;top:50%;left:100%;width:var(--gap);height:2px;background:var(--bline)}
+  .round.sf-col.mirror .tie::before{content:"";position:absolute;top:50%;right:100%;width:var(--gap);height:2px;background:var(--bline)}
+  /* two-sided (wide / landscape) layout */
+  .bracket.two-sided{gap:var(--gap);--gap:22px;width:fit-content;max-width:100%;min-width:0;margin-inline:auto}
+  .bracket.two-sided .round{width:142px}
+  .bracket.two-sided .side{display:flex;align-items:stretch}
+  .bracket.two-sided .side.right{flex-direction:row}
+  .bracket.two-sided .center{display:flex;flex-direction:column;position:relative;flex:0 0 auto;width:142px}
+  .center .final-col{flex:1;display:flex;flex-direction:column;margin-right:0}
+  .center .champ-wrap{position:absolute;left:0;right:0;top:14%;text-align:center;z-index:2}
+  .center .champ-lbl{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--trophy);margin-bottom:8px}
+  .center .champ{display:inline-flex;align-items:center;gap:8px;justify-content:center;min-width:120px;padding:10px 14px;border-radius:10px;border:1.5px solid var(--bline);background:rgba(0,0,0,.3);font-weight:800}
+  .center .champ .q{font-size:22px;color:var(--muted-2)}
+  .center .champ.won{border-color:var(--trophy);background:rgba(246,197,68,.16)}
+  .center .champ.won .fl{color:var(--green)}
+  .center .bronze-wrap{position:absolute;left:0;right:0;top:60%}
   .third-wrap{margin-top:20px;display:flex;justify-content:center}
   .third-card{width:236px}
   .third-cap{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center;font-weight:800;margin-bottom:5px}
+  /* in wide/two-sided mode let the bracket span the full viewport and centre on the page (aligned with the group stage above) */
+  @media (min-aspect-ratio:1/1) and (min-width:760px){
+    .bracket-wrap{width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);padding:0 16px;box-sizing:border-box}
+  }
+  /* knockout scorers modal */
+  .ko-modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(8,1,5,.72);backdrop-filter:blur(3px)}
+  .ko-modal[hidden]{display:none}
+  .ko-card{width:min(420px,100%);max-height:82vh;overflow-y:auto;background:linear-gradient(180deg,#2a0410,#1c0309);border:1px solid var(--panel-line);border-radius:16px;padding:18px 18px 20px;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .ko-close{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer}
+  .km-round{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--trophy);font-weight:900;text-align:center}
+  .km-meta{font-size:11px;color:var(--muted-2);text-align:center;margin-top:3px;font-family:var(--mono)}
+  .km-teams{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px 0 6px}
+  .km-team{flex:1;display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px}
+  .km-team:first-child{justify-content:flex-end;text-align:right}
+  .km-fl{font-size:20px}
+  .km-tbd{color:var(--muted-2);font-weight:600}
+  .km-score{font-family:var(--mono);font-weight:900;font-size:22px;display:flex;gap:6px;color:var(--trophy)}
+  .km-vs{color:var(--muted-2);font-weight:700;font-size:13px}
+  .km-goals-h{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:12px 0 6px;border-top:1px solid rgba(255,255,255,.1);padding-top:10px}
+  .km-note{font-size:12px;color:var(--muted);text-align:center;margin-top:12px;border-top:1px solid rgba(255,255,255,.1);padding-top:12px}
   .bnote{font-size:11.5px;color:var(--muted);margin-top:8px;border-left:2px solid var(--gold-2);padding-left:10px;max-width:760px}
 
   .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);background:#2a0410;
@@ -226,13 +276,13 @@
   <div class="bracket-wrap">
     <div class="trophy-hero"><div class="ic">🏆</div><div class="ti">The Final</div>
       <div class="dt">Jul 19, 2026 · MetLife Stadium, New York/New Jersey</div></div>
-    <div class="qrail" id="qrail"></div>
     <div id="bracketEl"></div>
     <p class="bnote">The bracket reads left to right: each match's winner advances along the connecting line to meet the winner of the match it joins. Teams in <span style="color:var(--green);font-weight:800">green</span> are already locked into their slot (group winners/runners-up that can no longer change); every other slot shows the seed and fills in as results come through. Scroll sideways to follow a path through to the final. Ties level after 90 minutes go to extra time, then penalties.</p>
   </div>
 </main>
 
 <div class="toast" id="toast"></div>
+<div class="ko-modal" id="koModal" hidden><div class="ko-card"><button class="ko-close" id="koClose" aria-label="Close">×</button><div id="koModalBody"></div></div></div>
 <footer>48 teams · 12 groups · 104 matches across 16 host cities. Scores, goalscorers &amp; standings update live from the open-source openfootball/worldcup.json feed while the page is open; a 25 Jun snapshot is built in as a fallback.</footer>
 
 <script>
@@ -449,6 +499,20 @@ const KO = {
   third:{u: "2026-07-18T21:00:00Z", v: "Miami"},
   final:{u: "2026-07-19T19:00:00Z", v: "New York/New Jersey"}
 };
+// openfootball match numbers in the same bracket order as KO above — used to pull
+// resolved teams (incl. the 8 best third-place sides) and scores from the live feed.
+const KON = {
+  r32:[74,77,73,75,83,84,81,82,76,78,79,80,86,88,85,87],
+  r16:[89,90,93,94,91,92,95,96], qf:[97,98,99,100], sf:[101,102], third:103, final:104
+};
+let KOFILL = {};   // matchNum -> {h,a,hs,as,st} resolved from openfootball when known
+// flat metadata per knockout match number, for the click-through scorers modal
+const KOMETA = {};
+[["r32","Round of 32"],["r16","Round of 16"],["qf","Quarter-final"],["sf","Semi-final"]].forEach(([k,name])=>{
+  KO[k].forEach((t,i)=>{ KOMETA[KON[k][i]]={u:t.u,v:t.v,name,top:t.top,bot:t.bot}; });
+});
+KOMETA[KON.final]={u:KO.final.u,v:KO.final.v,name:"Final"};
+KOMETA[KON.third]={u:KO.third.u,v:KO.third.v,name:"Third-place play-off"};
 
 const COLORS={}; Object.keys(GROUP_TEAMS).forEach((g,i)=>COLORS[g]=i%2===0?"red":"gold");
 
@@ -625,51 +689,92 @@ function groupFlags(g){
   return {top2,first,second};
 }
 
-function slotDiv(label,isTop){
-  const ab=LOCKS[label];
-  const cls="slot"+(isTop?" top":"")+(ab?" locked":"");
+function slotDiv(label,isTop,fill,sc,win){
+  const ab=fill||LOCKS[label]||null;
+  const cls="slot"+(isTop?" top":"")+(ab?" locked":"")+(win?" win":"");
   const inner=ab?`<span class="fl">${TEAM[ab][1]}</span><span class="nm">${TEAM[ab][0]}</span>`:`<span class="fl">●</span>${label}`;
-  return `<div class="${cls}">${inner}</div>`;
+  const score=(sc!=null&&sc!=="")?`<span class="sl-sc">${sc}</span>`:"";
+  return `<div class="${cls}">${inner}${score}</div>`;
 }
-function tieCard(t,extra){
+function tieCard(t,n,extra){
   const d=new Date(t.u);
-  return `<div class="tie ${extra||""}"><div class="card">
+  const f=KOFILL[n]||{};
+  const fin=f.st==="final"&&f.hs!=null&&f.as!=null;
+  const click=(f.h||f.a)?" clickable":"";
+  return `<div class="tie ${extra||""}${click}" data-ko="${n}"><div class="card">
     <div class="tie-when">${koDay(d)} · ${tHM(d)}</div>
     <div class="tie-venue">${t.v}</div>
-    ${slotDiv(t.top||"TBD",true)}
-    ${slotDiv(t.bot||"TBD",false)}</div></div>`;
+    ${slotDiv(t.top||"TBD",true,f.h,fin?f.hs:null,fin&&f.hs>f.as)}
+    ${slotDiv(t.bot||"TBD",false,f.a,fin?f.as:null,fin&&f.as>f.hs)}</div></div>`;
 }
-function roundCol(name,sub,ties,cls){
+function roundCol(name,sub,ties,nums,cls){
   let h=`<div class="round ${cls||""}"><div class="round-h"><div class="rn">${name}</div><div class="rd">${sub||""}</div></div><div class="round-ties">`;
-  ties.forEach(t=>h+=tieCard(t));
+  ties.forEach((t,i)=>h+=tieCard(t,nums[i]));
   return h+`</div></div>`;
 }
-function renderBracket(){
-  let pills="";
-  for(const g in GROUPS){
-    GROUPS[g].forEach(r=>{
-      const t=r[0]; if(!FLAGS[g].top2.has(t)) return;
-      const wU=r32DateFor("Winners "+g), rU=r32DateFor("Runners-up "+g);
-      let dtxt="R32 TBC", seed="seed TBD", win=false;
-      if(FLAGS[g].first===t){ dtxt=`R32 · ${koDay(new Date(wU))}`; seed="group winner — locked"; win=true; }
-      else if(FLAGS[g].second===t){ dtxt=`R32 · ${koDay(new Date(rU))}`; seed="runner-up — locked"; }
-      else if(wU&&rU){ const wd=koDay(new Date(wU)),rd=koDay(new Date(rU)); dtxt=(wd===rd)?`R32 · ${wd}`:`R32 · ${wd} / ${rd}`; seed="1st or 2nd TBD"; }
-      pills+=`<span class="qpill ${win?'win':''}"><span class="qp-top"><span class="fl">${TEAM[t][1]}</span>${TEAM[t][0]}</span><span class="r32d">${dtxt}</span><span class="r32s">${seed}</span></span>`;
-    });
-  }
-  document.getElementById("qrail").innerHTML=`<span class="lbl">Locked into the Round of 32 — when they play next</span>`+
-    (pills||`<span class="qpill" style="border-color:var(--panel-line)"><span class="qp-top">To be confirmed</span></span>`);
-
+function isWide(){ return window.matchMedia("(min-aspect-ratio: 1/1) and (min-width: 760px)").matches; }
+function halfArr(a,s){ const h=a.length/2; return s==="L"?a.slice(0,h):a.slice(h); }
+function buildLadder(){
   let cols="";
-  cols+=roundCol("Round of 32","28 Jun – 4 Jul",KO.r32,"feeds");
-  cols+=roundCol("Round of 16","4 – 7 Jul",KO.r16,"feeds fed");
-  cols+=roundCol("Quarter-finals","9 – 12 Jul",KO.qf,"feeds fed");
-  cols+=roundCol("Semi-finals","14 – 15 Jul",KO.sf,"feeds fed");
+  cols+=roundCol("Round of 32","28 Jun – 4 Jul",KO.r32,KON.r32,"feeds");
+  cols+=roundCol("Round of 16","4 – 7 Jul",KO.r16,KON.r16,"feeds fed");
+  cols+=roundCol("Quarter-finals","9 – 12 Jul",KO.qf,KON.qf,"feeds fed");
+  cols+=roundCol("Semi-finals","14 – 15 Jul",KO.sf,KON.sf,"feeds fed");
   cols+=`<div class="round fin fed"><div class="round-h"><div class="rn">🏆 Final</div><div class="rd">19 Jul · ${KO.final.v}</div></div>`+
-        `<div class="round-ties">${tieCard(KO.final,"final-tie")}</div></div>`;
-  const third=`<div class="third-wrap"><div class="third-card"><div class="third-cap">Third-place play-off · ${koDay(new Date(KO.third.u))} · ${KO.third.v}</div>${tieCard(KO.third)}</div></div>`;
-  document.getElementById("bracketEl").innerHTML=`<div class="bracket">${cols}</div>`+third;
+        `<div class="round-ties">${tieCard(KO.final,KON.final,"final-tie")}</div></div>`;
+  const third=`<div class="third-wrap"><div class="third-card"><div class="third-cap">Third-place play-off · ${koDay(new Date(KO.third.u))} · ${KO.third.v}</div>${tieCard(KO.third,KON.third)}</div></div>`;
+  return `<div class="bracket">${cols}</div>`+third;
 }
+function champBox(){
+  const ff=KOFILL[KON.final]||{};
+  let c=null;
+  if(ff.st==="final"&&ff.hs!=null&&ff.as!=null) c=ff.hs>ff.as?ff.h:(ff.as>ff.hs?ff.a:null);
+  const inner=c?`<span class="fl">${TEAM[c][1]}</span><span class="nm">${TEAM[c][0]}</span>`:`<span class="q">?</span>`;
+  return `<div class="champ-wrap"><div class="champ-lbl">World Champion</div><div class="champ${c?" won":""}">${inner}</div></div>`;
+}
+function buildTwoSided(){
+  const L=(nm,a,n,c)=>roundCol(nm,"",halfArr(a,"L"),halfArr(n,"L"),c);
+  const R=(nm,a,n,c)=>roundCol(nm,"",halfArr(a,"R"),halfArr(n,"R"),c);
+  const left=`<div class="side left">`
+    +L("Round of 32",KO.r32,KON.r32,"feeds")
+    +L("Round of 16",KO.r16,KON.r16,"feeds fed")
+    +L("Quarters",KO.qf,KON.qf,"feeds fed")
+    +L("Semis",KO.sf,KON.sf,"fed sf-col")
+    +`</div>`;
+  const center=`<div class="center">`
+    +champBox()
+    +`<div class="round final-col fin"><div class="round-h"><div class="rn">🏆 Final</div><div class="rd">19 Jul</div></div><div class="round-ties">${tieCard(KO.final,KON.final,"final-tie")}</div></div>`
+    +`<div class="bronze-wrap"><div class="third-cap">Bronze final · ${koDay(new Date(KO.third.u))}</div>${tieCard(KO.third,KON.third)}</div>`
+    +`</div>`;
+  const right=`<div class="side right">`
+    +R("Semis",KO.sf,KON.sf,"fed sf-col mirror")
+    +R("Quarters",KO.qf,KON.qf,"feeds fed mirror")
+    +R("Round of 16",KO.r16,KON.r16,"feeds fed mirror")
+    +R("Round of 32",KO.r32,KON.r32,"feeds mirror")
+    +`</div>`;
+  return `<div class="bracket two-sided">${left}${center}${right}</div>`;
+}
+function renderBracket(){
+  document.getElementById("bracketEl").innerHTML = isWide()?buildTwoSided():buildLadder();
+}
+/* knockout scorers modal */
+function openKO(n){
+  const meta=KOMETA[n]||{}, f=KOFILL[n]||{};
+  const d=meta.u?new Date(meta.u):null;
+  const fin=f.st==="final"&&f.hs!=null&&f.as!=null;
+  const tn=(code,fb)=>code?`<span class="km-fl">${TEAM[code][1]}</span><span>${TEAM[code][0]}</span>`:`<span class="km-tbd">${fb||"TBD"}</span>`;
+  const mid=fin?`<div class="km-score">${f.hs}<span>–</span>${f.as}</div>`:`<div class="km-vs">vs</div>`;
+  let body=`<div class="km-round">${meta.name||"Knockout"}</div>
+    <div class="km-meta">${d?koDay(d)+" · "+tHM(d):""}${meta.v?" · "+meta.v:""}</div>
+    <div class="km-teams"><div class="km-team">${tn(f.h,meta.top)}</div>${mid}<div class="km-team">${tn(f.a,meta.bot)}</div></div>`;
+  if(f.g&&f.g.length){
+    const sorted=[...f.g].sort((a,b)=>(a.minute==null?999:a.minute)-(b.minute==null?999:b.minute));
+    body+=`<div class="km-goals-h">Goalscorers</div>`+sorted.map(goalLine).join("");
+  } else body+=`<div class="km-note">${fin?"No goalscorer details for this match.":"Not played yet."}</div>`;
+  document.getElementById("koModalBody").innerHTML=body;
+  document.getElementById("koModal").hidden=false;
+}
+function closeKO(){ document.getElementById("koModal").hidden=true; }
 
 /* toast */
 let toastT;
@@ -725,6 +830,20 @@ async function fetchLive(){
       (M.goals2||[]).forEach(g=>goals.push({team:ac,player:g.name,minute:ofMin(g.minute),mdisp:String(g.minute),pen:!!g.penalty,og:!!g.owngoal}));
       if(goals.length) SCORERS[key(m)]=goals;
     });
+    // Knockout bracket: the feed lists the 32 non-group matches in bracket-number order
+    // (73..104). Resolve whatever teams are known yet — group winners/runners-up AND the
+    // eight best third-place sides once the group stage is decided — plus any scores.
+    const koList=(data.matches||[]).filter(M=>!/Matchday/i.test(M.round||""));
+    const newFill={};
+    koList.forEach((M,i)=>{
+      const num=73+i, hc=nameToCode(M.team1), ac=nameToCode(M.team2), ft=M.score&&M.score.ft;
+      if(!(hc||ac||(ft&&ft.length>=2))) return;
+      const g=[];
+      if(hc)(M.goals1||[]).forEach(x=>g.push({team:hc,player:x.name,minute:ofMin(x.minute),mdisp:String(x.minute),pen:!!x.penalty,og:!!x.owngoal}));
+      if(ac)(M.goals2||[]).forEach(x=>g.push({team:ac,player:x.name,minute:ofMin(x.minute),mdisp:String(x.minute),pen:!!x.penalty,og:!!x.owngoal}));
+      newFill[num]={h:hc||null,a:ac||null,hs:ft?ft[0]:null,as:ft?ft[1]:null,st:(ft&&ft.length>=2)?"final":"sched",g};
+    });
+    if(JSON.stringify(newFill)!==JSON.stringify(KOFILL)){ KOFILL=newFill; changed++; }
     setLiveStatus(true,changed);
     if(changed) renderAll();
   }catch(e){ setLiveStatus(false); }
@@ -734,6 +853,18 @@ async function fetchLive(){
 renderAll();
 fetchLive();
 setInterval(fetchLive,60000);
+
+/* knockout match -> scorers modal */
+document.getElementById("bracketEl").addEventListener("click",e=>{
+  const tie=e.target.closest(".tie[data-ko]"); if(!tie) return;
+  openKO(+tie.dataset.ko);
+});
+document.getElementById("koClose").addEventListener("click",closeKO);
+document.getElementById("koModal").addEventListener("click",e=>{ if(e.target.id==="koModal") closeKO(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeKO(); });
+/* swap ladder <-> two-sided bracket when the viewport orientation crosses square */
+const mqWide=window.matchMedia("(min-aspect-ratio: 1/1) and (min-width: 760px)");
+(mqWide.addEventListener?mqWide.addEventListener.bind(mqWide,"change"):mqWide.addListener.bind(mqWide))(renderBracket);
 </script>
 </body>
 </html>
