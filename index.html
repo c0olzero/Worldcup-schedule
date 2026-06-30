@@ -239,6 +239,8 @@
   .km-odds{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:8px 4px 0;border-top:1px dashed rgba(255,255,255,.12)}
   .km-od{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--trophy)}
   .km-odds-lbl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);text-align:center;flex:1}
+  .km-pens{text-align:center;font-size:11px;color:var(--text);margin-top:-2px}
+  .km-pens strong{color:var(--trophy)}
   .bnote{font-size:11.5px;color:var(--muted);margin-top:8px;border-left:2px solid var(--gold-2);padding-left:10px;max-width:760px}
 
   .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);background:#2a0410;
@@ -532,10 +534,8 @@ function winProb(a,b){ if(!ELO[a]||!ELO[b]) return null; return 1/(1+Math.pow(10
 // semifinal loser into the bronze final). Runs on the live KOFILL so the bracket fills
 // itself forward the instant a result is in, without waiting for the feed to rewrite refs.
 function propagateBracket(){
-  const f=n=>KOFILL[n];
-  const done=n=>{const x=f(n);return x&&x.st==="final"&&x.hs!=null&&x.as!=null&&x.hs!==x.as;};
-  const win=n=>done(n)?(f(n).hs>f(n).as?f(n).h:f(n).a):null;
-  const lose=n=>done(n)?(f(n).hs>f(n).as?f(n).a:f(n).h):null;
+  const win=n=>koWinner(KOFILL[n]);
+  const lose=n=>koLoser(KOFILL[n]);
   const ensure=n=>{ if(!KOFILL[n]) KOFILL[n]={h:null,a:null,hs:null,as:null,st:"sched",g:[]}; return KOFILL[n]; };
   const put=(n,slot,code)=>{ if(code){ const x=ensure(n); if(!x[slot]) x[slot]=code; } };
   KON.r16.forEach((n,i)=>{ put(n,"h",win(KON.r32[2*i])); put(n,"a",win(KON.r32[2*i+1])); });
@@ -544,6 +544,14 @@ function propagateBracket(){
   put(KON.final,"h",win(KON.sf[0])); put(KON.final,"a",win(KON.sf[1]));
   put(KON.third,"h",lose(KON.sf[0])); put(KON.third,"a",lose(KON.sf[1]));
 }
+// Winner of a decided knockout match — by score, or by the penalty shootout when level.
+function koWinner(f){
+  if(!f||f.st!=="final"||f.hs==null||f.as==null) return null;
+  if(f.hs!==f.as) return f.hs>f.as ? f.h : f.a;
+  if(f.ph!=null&&f.pa!=null&&f.ph!==f.pa) return f.ph>f.pa ? f.h : f.a;
+  return null;
+}
+function koLoser(f){ const w=koWinner(f); return w ? (w===f.h ? f.a : f.h) : null; }
 
 const COLORS={}; Object.keys(GROUP_TEAMS).forEach((g,i)=>COLORS[g]=i%2===0?"red":"gold");
 
@@ -749,14 +757,18 @@ function tieCard(t,n,extra){
   const d=new Date(t.u);
   const f=KOFILL[n]||{};
   const fin=f.st==="final"&&f.hs!=null&&f.as!=null;
+  const pens=fin&&f.ph!=null&&f.pa!=null;
+  const wc=fin?koWinner(f):null;
   const click=(f.h||f.a)?" clickable":"";
   let pH=null,pA=null;
   if(!fin&&f.h&&f.a){ const p=winProb(f.h,f.a); if(p!=null){ pH=p; pA=1-p; } }
+  const topSc=fin?(f.hs+(pens?` (${f.ph})`:"")):null;
+  const botSc=fin?(f.as+(pens?` (${f.pa})`:"")):null;
   return `<div class="tie ${extra||""}${click}" data-ko="${n}"><div class="card">
     <div class="tie-when">${koDay(d)} · ${tHM(d)}</div>
     <div class="tie-venue">${t.v}</div>
-    ${slotDiv(t.top||"TBD",true,f.h,fin?f.hs:null,fin&&f.hs>f.as,pH)}
-    ${slotDiv(t.bot||"TBD",false,f.a,fin?f.as:null,fin&&f.as>f.hs,pA)}</div></div>`;
+    ${slotDiv(t.top||"TBD",true,f.h,topSc,wc&&wc===f.h,pH)}
+    ${slotDiv(t.bot||"TBD",false,f.a,botSc,wc&&wc===f.a,pA)}</div></div>`;
 }
 function roundCol(name,sub,ties,nums,cls){
   let h=`<div class="round ${cls||""}"><div class="round-h"><div class="rn">${name}</div><div class="rd">${sub||""}</div></div><div class="round-ties">`;
@@ -818,6 +830,10 @@ function openKO(n){
   let body=`<div class="km-round">${meta.name||"Knockout"}</div>
     <div class="km-meta">${d?koDay(d)+" · "+tHM(d):""}${meta.v?" · "+meta.v:""}</div>
     <div class="km-teams"><div class="km-team">${tn(f.h,meta.top)}</div>${mid}<div class="km-team">${tn(f.a,meta.bot)}</div></div>`;
+  if(fin&&f.ph!=null&&f.pa!=null){
+    const w=koWinner(f), wn=w&&TEAM[w]?TEAM[w][0]:"";
+    body+=`<div class="km-pens">level after extra time · <strong>${wn}</strong> win ${Math.max(f.ph,f.pa)}–${Math.min(f.ph,f.pa)} on penalties</div>`;
+  }
   if(f.h&&f.a&&winProb(f.h,f.a)!=null){
     const ph=Math.round(winProb(f.h,f.a)*100);
     body+=`<div class="km-odds"><span class="km-od${ph>=50?" fav":""}">${ph}%</span><span class="km-odds-lbl">chance of winning${fin?" (pre-match)":""}</span><span class="km-od${100-ph>50?" fav":""}">${100-ph}%</span></div>`;
@@ -891,12 +907,17 @@ async function fetchLive(){
     const koList=(data.matches||[]).filter(M=>!/Matchday/i.test(M.round||""));
     const newFill={};
     koList.forEach((M,i)=>{
-      const num=73+i, hc=nameToCode(M.team1), ac=nameToCode(M.team2), ft=M.score&&M.score.ft;
-      if(!(hc||ac||(ft&&ft.length>=2))) return;
+      const num=73+i, hc=nameToCode(M.team1), ac=nameToCode(M.team2);
+      const sc=M.score||{}, ft=sc.ft, et=sc.et, p=sc.p, played=(ft&&ft.length>=2);
+      if(!(hc||ac||played)) return;
       const g=[];
       if(hc)(M.goals1||[]).forEach(x=>g.push({team:hc,player:x.name,minute:ofMin(x.minute),mdisp:String(x.minute),pen:!!x.penalty,og:!!x.owngoal}));
       if(ac)(M.goals2||[]).forEach(x=>g.push({team:ac,player:x.name,minute:ofMin(x.minute),mdisp:String(x.minute),pen:!!x.penalty,og:!!x.owngoal}));
-      newFill[num]={h:hc||null,a:ac||null,hs:ft?ft[0]:null,as:ft?ft[1]:null,st:(ft&&ft.length>=2)?"final":"sched",g};
+      const base=(et&&et.length>=2)?et:(ft||[]);   // on-field score, after extra time if it was played
+      newFill[num]={h:hc||null,a:ac||null,
+        hs:played?base[0]:null, as:played?base[1]:null,
+        ph:(p&&p.length>=2)?p[0]:null, pa:(p&&p.length>=2)?p[1]:null,
+        st:played?"final":"sched", g};
     });
     const prevKO=JSON.stringify(KOFILL);
     KOFILL=newFill;
